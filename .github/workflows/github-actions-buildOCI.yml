@@ -4,8 +4,8 @@ run-name: Build OCI Image for GoLang binary
 
 on:
   push:
-    #branches: ['main']
-    tags: ['v*']
+    branches: ['main']
+  #  tags: ['v*']
   #pull_request:
   #  branches: ['main']
 
