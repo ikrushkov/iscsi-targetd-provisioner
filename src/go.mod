@@ -1,8 +1,6 @@
 module github.com/ikrushkov/iscsi-targetd-provisioner
 
-go 1.21
-
-toolchain go1.21.3
+go 1.19
 
 require (
 	github.com/magiconair/properties v1.8.7
