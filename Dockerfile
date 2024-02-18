@@ -9,7 +9,7 @@ WORKDIR /build
 # create module, fetch dependencies, then build
 RUN go mod download && go mod verify
 
-RUN CGO_ENABLED=0 GOOS=linux go build main.go
+RUN CGO_ENABLED=0 GOOS=linux go build github.com/ikrushkov/iscsi-targetd-provisioner
 
 
 #
