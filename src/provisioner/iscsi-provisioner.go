@@ -20,17 +20,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+
 	"github.com/magiconair/properties"
 	"github.com/powerman/rpc-codec/jsonrpc2"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/sig-storage-lib-external-provisioner/v10/controller"
 	"sigs.k8s.io/sig-storage-lib-external-provisioner/v10/util"
-	"sort"
-	"strconv"
-	"strings"
 )
 
 var log = logrus.New()
@@ -133,10 +134,10 @@ func (p *iscsiProvisioner) Provision(ctx context.Context, options controller.Pro
 	annotations["pool"] = pool
 	annotations["initiators"] = options.StorageClass.Parameters["initiators"]
 
-	var portals []string
-	if len(options.StorageClass.Parameters["portals"]) > 0 {
-		portals = strings.Split(options.StorageClass.Parameters["portals"], ",")
-	}
+	// var portals []string
+	// if len(options.StorageClass.Parameters["portals"]) > 0 {
+	// 	portals = strings.Split(options.StorageClass.Parameters["portals"], ",")
+	// }
 
 	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
@@ -153,18 +154,33 @@ func (p *iscsiProvisioner) Provision(ctx context.Context, options controller.Pro
 			// set volumeMode from PVC Spec
 			VolumeMode: options.PVC.Spec.VolumeMode,
 			PersistentVolumeSource: v1.PersistentVolumeSource{
-				ISCSI: &v1.ISCSIPersistentVolumeSource{
-					TargetPortal:      options.StorageClass.Parameters["targetPortal"],
-					Portals:           portals,
-					IQN:               options.StorageClass.Parameters["iqn"],
-					ISCSIInterface:    options.StorageClass.Parameters["iscsiInterface"],
-					Lun:               lun,
-					ReadOnly:          getReadOnly(options.StorageClass.Parameters["readonly"]),
-					FSType:            getFsType(options.StorageClass.Parameters["fsType"]),
-					DiscoveryCHAPAuth: getBool(options.StorageClass.Parameters["chapAuthDiscovery"]),
-					SessionCHAPAuth:   getBool(options.StorageClass.Parameters["chapAuthSession"]),
-					SecretRef:         getSecretRef(getBool(options.StorageClass.Parameters["chapAuthDiscovery"]), getBool(options.StorageClass.Parameters["chapAuthSession"]), &v1.SecretReference{Name: viper.GetString("provisioner-name") + "-chap-secret"}),
+				CSI: &v1.CSIPersistentVolumeSource{
+					Driver:       "iscsi.csi.k8s.io",
+					VolumeHandle: options.PVName, //to chaeck
+					FSType:       getFsType(options.StorageClass.Parameters["fsType"]),
+					ReadOnly:     getReadOnly(options.StorageClass.Parameters["readonly"]),
+					VolumeAttributes: map[string]string{
+						"targetPortal":      options.StorageClass.Parameters["targetPortal"],
+						"portals":           getPortal(options.StorageClass.Parameters["portals"]),
+						"iqn":               options.StorageClass.Parameters["iqn"],
+						"lun":               getLun(lun),
+						"iscsiInterface":    options.StorageClass.Parameters["iscsiInterface"],
+						"discoveryCHAPAuth": options.StorageClass.Parameters["chapAuthDiscovery"],
+						"sessionCHAPAuth":   options.StorageClass.Parameters["chapAuthSession"],
+					},
 				},
+				// ISCSI: &v1.ISCSIPersistentVolumeSource{
+				// 	TargetPortal:      options.StorageClass.Parameters["targetPortal"],
+				// 	Portals:           portals,
+				// 	IQN:               options.StorageClass.Parameters["iqn"],
+				// 	ISCSIInterface:    options.StorageClass.Parameters["iscsiInterface"],
+				// 	Lun:               lun,
+				// 	ReadOnly:          getReadOnly(options.StorageClass.Parameters["readonly"]),
+				// 	FSType:            getFsType(options.StorageClass.Parameters["fsType"]),
+				// 	DiscoveryCHAPAuth: getBool(options.StorageClass.Parameters["chapAuthDiscovery"]),
+				// 	SessionCHAPAuth:   getBool(options.StorageClass.Parameters["chapAuthSession"]),
+				// 	SecretRef:         getSecretRef(getBool(options.StorageClass.Parameters["chapAuthDiscovery"]), getBool(options.StorageClass.Parameters["chapAuthSession"]), &v1.SecretReference{Name: viper.GetString("provisioner-name") + "-chap-secret"}),
+				// },
 			},
 		},
 	}
@@ -200,6 +216,17 @@ func getBool(value string) bool {
 	}
 	return res
 
+}
+
+func getPortal(value string) string {
+	if value == "" {
+		return "[]"
+	}
+	return value
+}
+
+func getLun(lun int32) string {
+	return strconv.FormatInt(int64(lun), 10)
 }
 
 // Delete removes the storage asset that was created by Provision represented
