@@ -19,6 +19,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+
 	"github.com/ikrushkov/iscsi-targetd-provisioner/provisioner"
 
 	"github.com/sirupsen/logrus"
@@ -127,8 +128,8 @@ func init() {
 	viper.BindPFlag("master", startcontrollerCmd.Flags().Lookup("master"))
 	startcontrollerCmd.Flags().String("kubeconfig", "", "Absolute path to the kubeconfig")
 	viper.BindPFlag("kubeconfig", startcontrollerCmd.Flags().Lookup("kubeconfig"))
-	startcontrollerCmd.Flags().String("session-chap-credential-file-path", "/var/run/secrets/iscsi-provisioner/session-chap-credential.properties", "path where the credential for session chap authentication can be found")
-	viper.BindPFlag("session-chap-credential-file-path", startcontrollerCmd.Flags().Lookup("session-chap-credential-file-path"))
+	// startcontrollerCmd.Flags().String("session-chap-credential-file-path", "/var/run/secrets/iscsi-provisioner/session-chap-credential.properties", "path where the credential for session chap authentication can be found")
+	// viper.BindPFlag("session-chap-credential-file-path", startcontrollerCmd.Flags().Lookup("session-chap-credential-file-path"))
 
 	// Here you will define your flags and configuration settings.
 
