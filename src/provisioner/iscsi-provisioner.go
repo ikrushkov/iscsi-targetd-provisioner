@@ -165,7 +165,12 @@ func (p *iscsiProvisioner) Provision(ctx context.Context, options controller.Pro
 						"discoveryCHAPAuth": options.StorageClass.Parameters["chapAuthDiscovery"],
 						"sessionCHAPAuth":   options.StorageClass.Parameters["chapAuthSession"],
 					},
-					NodeStageSecretRef: getSecretRef(getBool(options.StorageClass.Parameters["chapAuthDiscovery"]), getBool(options.StorageClass.Parameters["chapAuthSession"]), &v1.SecretReference{Name: viper.GetString("provisioner-name") + "-chap-secret"}),
+					NodeStageSecretRef: getSecretRef(
+						getBool(options.StorageClass.Parameters["chapAuthDiscovery"]),
+						getBool(options.StorageClass.Parameters["chapAuthSession"]),
+						(viper.GetString("provisioner-name") + "-chap-secret"),
+						options.PVC.Namespace,
+					),
 				},
 				// ISCSI: &v1.ISCSIPersistentVolumeSource{
 				// 	TargetPortal:      options.StorageClass.Parameters["targetPortal"],
@@ -200,9 +205,12 @@ func getFsType(fsType string) string {
 	return fsType
 }
 
-func getSecretRef(discovery bool, session bool, ref *v1.SecretReference) *v1.SecretReference {
+func getSecretRef(discovery bool, session bool, secretName string, namespace string) *v1.SecretReference {
 	if discovery || session {
-		return ref
+		return &v1.SecretReference{
+			Name:      secretName,
+			Namespace: namespace,
+		}
 	}
 	return nil
 }
