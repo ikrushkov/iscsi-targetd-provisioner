@@ -165,6 +165,7 @@ func (p *iscsiProvisioner) Provision(ctx context.Context, options controller.Pro
 						"discoveryCHAPAuth": options.StorageClass.Parameters["chapAuthDiscovery"],
 						"sessionCHAPAuth":   options.StorageClass.Parameters["chapAuthSession"],
 					},
+					NodeStageSecretRef: getSecretRef(getBool(options.StorageClass.Parameters["chapAuthDiscovery"]), getBool(options.StorageClass.Parameters["chapAuthSession"]), &v1.SecretReference{Name: viper.GetString("provisioner-name") + "-chap-secret"}),
 				},
 				// ISCSI: &v1.ISCSIPersistentVolumeSource{
 				// 	TargetPortal:      options.StorageClass.Parameters["targetPortal"],
