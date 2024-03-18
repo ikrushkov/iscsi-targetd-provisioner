@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/magiconair/properties"
 	"github.com/powerman/rpc-codec/jsonrpc2"
@@ -35,6 +36,7 @@ import (
 )
 
 var log = logrus.New()
+var createVolumeMutex sync.Mutex
 
 type chapSessionCredentials struct {
 	InUser      string `properties:"node.session.auth.username"`
@@ -133,11 +135,6 @@ func (p *iscsiProvisioner) Provision(ctx context.Context, options controller.Pro
 	annotations["volume_name"] = vol
 	annotations["pool"] = pool
 	annotations["initiators"] = options.StorageClass.Parameters["initiators"]
-
-	// var portals []string
-	// if len(options.StorageClass.Parameters["portals"]) > 0 {
-	// 	portals = strings.Split(options.StorageClass.Parameters["portals"], ",")
-	// }
 
 	pv := &v1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
@@ -263,6 +260,8 @@ func initLog() {
 }
 
 func (p *iscsiProvisioner) createVolume(options controller.ProvisionOptions) (vol string, lun int32, pool string, err error) {
+	createVolumeMutex.Lock()
+	defer createVolumeMutex.Unlock()
 	size := getSize(options)
 	vol = p.getVolumeName(options)
 	pool = p.getVolumeGroup(options)
